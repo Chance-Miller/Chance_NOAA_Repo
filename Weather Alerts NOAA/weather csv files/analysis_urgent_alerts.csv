@@ -1,0 +1,33 @@
+event,area_desc,severity,urgency,expires,minutes_until_expiration
+Special Marine Warning,Coastal waters from Altamaha Sound to Fernandina Beach FL out 20 NM; Waters from Altamaha Sound GA to Fernandina Beach FL from 20 to 60 NM,Severe,Immediate,2025-08-14 20:03:00+00:00,2.0
+Severe Thunderstorm Warning,"Madison, LA; Tensas, LA; Issaquena, MS; Warren, MS",Severe,Immediate,2025-08-14 20:15:00+00:00,14.0
+Severe Thunderstorm Warning,"Tensas, LA; Claiborne, MS; Jefferson, MS",Severe,Immediate,2025-08-14 20:15:00+00:00,14.0
+Special Marine Warning,Coastal waters from Little River Inlet to Murrells Inlet SC out 20 nm,Severe,Immediate,2025-08-14 20:30:00+00:00,29.0
+Flood Warning,"Calhoun, SC; Lexington, SC; Richland, SC",Severe,Immediate,2025-08-14 20:30:00+00:00,29.0
+Severe Thunderstorm Warning,"Hancock, ME; Penobscot, ME; Washington, ME",Severe,Immediate,2025-08-14 20:30:00+00:00,29.0
+Flood Warning,"Calhoun, SC; Richland, SC",Severe,Immediate,2025-08-14 20:30:00+00:00,29.0
+Evacuation Immediate,WY Wyoming Office of Homeland Security,Extreme,Immediate,2025-08-14 20:38:07+00:00,37.0
+Special Marine Warning,Coastal waters from St. Augustine to Flagler Beach FL out 20 NM,Severe,Immediate,2025-08-14 20:45:00+00:00,44.0
+Severe Thunderstorm Warning,"Bienville, LA",Severe,Immediate,2025-08-14 20:45:00+00:00,44.0
+Special Marine Warning,"Coastal Waters from Eastport, ME to Schoodic Point, ME out 25 NM; Coastal Waters from Schoodic Point, ME to Stonington, ME out 25 NM; Intra Coastal Waters from Schoodic Point, ME to Stonington, ME",Severe,Immediate,2025-08-14 20:45:00+00:00,44.0
+Flood Warning,"Ozaukee, WI",Severe,Immediate,2025-08-14 21:00:00+00:00,59.0
+Special Marine Warning,Chesapeake Bay from Pooles Island to Sandy Point MD; Patapsco River including Baltimore Harbor,Severe,Immediate,2025-08-14 21:00:00+00:00,59.0
+Special Marine Warning,Chesapeake Bay from North Beach to Drum Point MD; Chesapeake Bay from Drum Point MD to Smith Point VA; Patuxent River to Broomes Island MD; Tangier Sound and the inland waters surrounding Bloodsworth Island,Severe,Immediate,2025-08-14 21:30:00+00:00,89.0
+Flood Warning,"Waukesha, WI",Severe,Immediate,2025-08-14 21:45:00+00:00,104.0
+Flood Warning,"Ozaukee, WI",Severe,Immediate,2025-08-14 21:45:00+00:00,104.0
+Flood Warning,"Johnston, NC",Severe,Immediate,2025-08-15 01:30:00+00:00,329.0
+Flood Warning,"Calhoun, SC; Lexington, SC; Richland, SC",Severe,Immediate,2025-08-15 03:00:00+00:00,419.0
+Flood Warning,"Calhoun, SC; Richland, SC",Severe,Immediate,2025-08-15 03:00:00+00:00,419.0
+Flood Warning,"Waukesha, WI",Severe,Immediate,2025-08-15 03:45:00+00:00,464.0
+Flood Warning,"Ozaukee, WI",Severe,Immediate,2025-08-15 03:45:00+00:00,464.0
+Flood Warning,"Calhoun, SC; Lexington, SC; Richland, SC",Severe,Immediate,2025-08-15 07:30:00+00:00,689.0
+Flood Warning,"Calhoun, SC; Richland, SC",Severe,Immediate,2025-08-15 07:30:00+00:00,689.0
+Flood Warning,"Clinton, IA; Scott, IA",Severe,Immediate,2025-08-15 08:00:00+00:00,719.0
+Flood Warning,"Horry, SC",Severe,Immediate,2025-08-15 09:15:00+00:00,794.0
+Flood Warning,"Bladen, NC; Cumberland, NC",Severe,Immediate,2025-08-15 09:15:00+00:00,794.0
+Flood Warning,"Brunswick, NC; Columbus, NC; Horry, SC",Severe,Immediate,2025-08-15 09:15:00+00:00,794.0
+Flood Warning,"Berkeley, SC; Georgetown, SC; Williamsburg, SC",Severe,Immediate,2025-08-15 15:15:00+00:00,1154.0
+Flood Warning,"Clay, MN",Severe,Immediate,2025-08-15 20:30:00+00:00,1469.0
+Flood Warning,"Clay, MN",Severe,Immediate,2025-08-15 20:30:00+00:00,1469.0
+Flood Warning,"Brown, SD",Severe,Immediate,2025-08-16 02:00:00+00:00,1799.0
+Flood Warning,"Clay, MN",Severe,Immediate,2025-08-16 02:00:00+00:00,1799.0

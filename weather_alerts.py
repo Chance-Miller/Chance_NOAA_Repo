@@ -224,18 +224,44 @@ def run_analytical_queries(df):
 
 def export_analysis_results(results):
     """
-    Export analysis results to files
+    Export analysis results to both CSV and Parquet files
     """
     if not results:
         return
     
-    # Export key results to CSV files
-    results['event_counts'].to_csv('analysis_event_counts.csv')
-    results['severity_analysis'].to_csv('analysis_severity_breakdown.csv')
-    results['summary_stats'].to_csv('analysis_summary_stats.csv')
-    results['data_quality'].to_csv('analysis_data_quality.csv')
+    # Define the analysis results to export
+    exports = {
+        'analysis_event_counts': results['event_counts'],
+        'analysis_severity_breakdown': results['severity_analysis'],
+        'analysis_summary_stats': results['summary_stats'],
+        'analysis_data_quality': results['data_quality']
+    }
     
-    print(f"\n✅ Analysis results exported to CSV files")
+    # Export each result to both CSV and Parquet
+    for filename, data in exports.items():
+        if isinstance(data, pd.Series):
+            # Convert Series to DataFrame for better export
+            df = data.to_frame().reset_index()
+        else:
+            df = data.reset_index() if hasattr(data, 'reset_index') else data
+        
+        # Export to CSV
+        df.to_csv(f'{filename}.csv', index=False)
+        
+        # Export to Parquet
+        df.to_parquet(f'{filename}.parquet', index=False)
+    
+    # Also export the top areas and urgent alerts if they exist
+    if 'top_areas' in results and not results['top_areas'].empty:
+        top_areas_df = results['top_areas'].to_frame().reset_index()
+        top_areas_df.to_csv('analysis_top_areas.csv', index=False)
+        top_areas_df.to_parquet('analysis_top_areas.parquet', index=False)
+    
+    if 'urgent_alerts' in results and not results['urgent_alerts'].empty:
+        results['urgent_alerts'].to_csv('analysis_urgent_alerts.csv', index=False)
+        results['urgent_alerts'].to_parquet('analysis_urgent_alerts.parquet', index=False)
+    
+    print(f"\n✅ Analysis results exported to both CSV and Parquet files")
 
 def main():
     """
@@ -262,13 +288,13 @@ def main():
     
     print(f"\n✅ Analysis complete!")
     print(f"📊 Total alerts processed: {len(df)}")
-    print(f"💾 Data saved as:")
-    print(f"   - weather_alerts.csv (main dataset)")
-    print(f"   - weather_alerts.parquet (optimized format)")
-    print(f"   - analysis_*.csv (individual analysis results)")
-    print(f"🔍 You can explore the data further using:")
-    print(f"   - pandas: pd.read_csv('weather_alerts.csv')")
-    print(f"   - Excel or any CSV viewer")
+    print(f"💾 Data saved in dual formats:")
+    print(f"   - weather_alerts.csv/.parquet (main dataset)")
+    print(f"   - analysis_*.csv/.parquet (individual analysis results)")
+    print(f"🔍 You can explore the data using:")
+    print(f"   - CSV files: Excel, Google Sheets, any spreadsheet app")
+    print(f"   - Parquet files: pandas (faster loading)")
+    print(f"   - Python: pd.read_csv() or pd.read_parquet()")
     print(f"   - Jupyter notebooks for interactive analysis")
 
 if __name__ == "__main__":

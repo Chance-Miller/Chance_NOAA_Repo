@@ -1,6 +1,6 @@
 severity,alert_count,percentage
-Minor,147,29.4
-Moderate,128,25.6
-Severe,127,25.4
-Unknown,96,19.2
+Moderate,179,35.8
+Minor,127,25.4
+Severe,97,19.4
+Unknown,95,19.0
 Extreme,2,0.4

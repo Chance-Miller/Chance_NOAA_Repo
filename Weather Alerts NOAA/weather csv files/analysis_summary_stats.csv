@@ -1,7 +1,7 @@
-,metric,count
+index,metric,count
 0,total_alerts,500
-1,actual_alerts,407
-2,test_alerts,93
-3,immediate_alerts,88
-4,severe_alerts,127
+1,actual_alerts,409
+2,test_alerts,91
+3,immediate_alerts,74
+4,severe_alerts,97
 5,extreme_alerts,2
