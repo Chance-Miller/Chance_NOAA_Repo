@@ -2,12 +2,12 @@
 
 ## Executive Summary
 
-A complete data engineering solution that fetches real-time weather alerts from NOAA's public API, stores them locally in SQLite, and provides analytical insights for operational decision-making. The solution processes 500+ active weather alerts and provides 6 key analytical queries including geographic distribution, severity analysis, and time-based metrics.
+A complete data engineering solution that fetches real-time weather alerts from NOAA's public API, processes them using pandas DataFrames, and provides analytical insights for operational decision-making. The solution processes 500+ active weather alerts and provides 8 key analytical queries including geographic distribution, severity analysis, and time-based metrics.
 
 **Key Results:**
 - Successfully ingested 500+ weather alerts from NOAA API
-- Implemented robust SQLite storage with proper schema design
-- Delivered 6 analytical queries providing operational insights
+- Implemented pandas DataFrame processing with multiple export formats
+- Delivered 8 analytical queries providing operational insights
 - Created professional documentation with clear setup instructions
 
 A Python-based solution for fetching, storing, and analyzing weather alerts from the National Weather Service API.
@@ -23,15 +23,17 @@ This project demonstrates:
 
 ### Technology Stack
 - **Python 3.x** - Main programming language
-- **SQLite** - Local database (chosen for simplicity, portability, and no setup requirements)
-- **Pandas** - Data analysis and presentation
+- **Pandas** - DataFrame processing and analysis (chosen for flexibility and rich analytical capabilities)
+- **NumPy** - Numerical computations
+- **PyArrow** - Efficient Parquet file format support
 - **Requests** - HTTP API calls
 
 ### Design Assumptions
 1. **Data Freshness**: Alerts are fetched fresh on each run (no incremental updates)
-2. **Storage Format**: SQLite chosen over alternatives (DuckDB, Parquet) for simplicity and universal compatibility
-3. **Data Validation**: Basic validation through API response structure
+2. **Storage Format**: Multiple formats (CSV, Parquet) for flexibility and compatibility
+3. **Data Validation**: Basic validation through API response structure and pandas data types
 4. **Geographic Scope**: All US alerts (no filtering by region)
+5. **Memory Usage**: DataFrame approach suitable for current data volumes (500+ alerts)
 
 ### Data Model
 ```sql
