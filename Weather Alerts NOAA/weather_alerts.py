@@ -1,13 +1,12 @@
 import requests
 import json
-import sqlite3
-from datetime import datetime, timedelta
 import pandas as pd
-import re
+from datetime import datetime, timedelta
+import numpy as np
 
 def fetch_weather_alerts():
     """
-    Fetch weather alerts from NOAA Weather API
+    Fetch weather alerts from NOAA Weather API and return as DataFrame
     """
     url = "https://api.weather.gov/alerts"
     
@@ -20,7 +19,7 @@ def fetch_weather_alerts():
         print(f"API Response: {len(data.get('features', []))} alerts found")
         
         # Extract alerts from the features array
-        alerts = []
+        alerts_data = []
         for feature in data.get('features', []):
             properties = feature.get('properties', {})
             geometry = feature.get('geometry', {})
@@ -44,77 +43,49 @@ def fetch_weather_alerts():
                 'web': properties.get('web'),
                 'geometry_type': geometry.get('type') if geometry else None
             }
-            alerts.append(alert)
+            alerts_data.append(alert)
         
-        return alerts
+        # Create DataFrame
+        df = pd.DataFrame(alerts_data)
+        
+        # Convert datetime columns with UTC timezone handling
+        datetime_columns = ['sent', 'effective', 'expires']
+        for col in datetime_columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce', utc=True)
+        
+        print(f"✅ Created DataFrame with {len(df)} alerts")
+        return df
     
     except requests.exceptions.RequestException as e:
         print(f"Error fetching data: {e}")
-        return []
+        return pd.DataFrame()
 
-def save_to_sqlite(alerts, db_path='weather_alerts.db'):
+def save_dataframe(df, file_formats=['csv', 'parquet']):
     """
-    Save alerts to SQLite database
+    Save DataFrame to multiple formats for analysis
     """
-    conn = sqlite3.connect(db_path)
+    if df.empty:
+        print("❌ No data to save")
+        return
     
-    # Drop existing table and recreate with correct schema
-    conn.execute("DROP TABLE IF EXISTS weather_alerts")
-    
-    # Create table with enhanced schema
-    create_table_sql = """
-    CREATE TABLE weather_alerts (
-        id TEXT PRIMARY KEY,
-        area_desc TEXT,
-        event TEXT,
-        severity TEXT,
-        certainty TEXT,
-        urgency TEXT,
-        headline TEXT,
-        description TEXT,
-        instruction TEXT,
-        sent TEXT,
-        effective TEXT,
-        expires TEXT,
-        status TEXT,
-        message_type TEXT,
-        sender_name TEXT,
-        web TEXT,
-        geometry_type TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """
-    
-    conn.execute(create_table_sql)
-    
-    # Insert alerts
-    for alert in alerts:
-        insert_sql = """
-        INSERT INTO weather_alerts 
-        (id, area_desc, event, severity, certainty, urgency, headline, 
-         description, instruction, sent, effective, expires, status, 
-         message_type, sender_name, web, geometry_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """
-        
-        conn.execute(insert_sql, (
-            alert['id'], alert['area_desc'], alert['event'], 
-            alert['severity'], alert['certainty'], alert['urgency'],
-            alert['headline'], alert['description'], alert['instruction'],
-            alert['sent'], alert['effective'], alert['expires'],
-            alert['status'], alert['message_type'], alert['sender_name'],
-            alert['web'], alert['geometry_type']
-        ))
-    
-    conn.commit()
-    conn.close()
-    print(f"✅ Saved {len(alerts)} alerts to SQLite database")
+    for fmt in file_formats:
+        if fmt == 'csv':
+            df.to_csv('weather_alerts.csv', index=False)
+            print(f"✅ Saved to weather_alerts.csv")
+        elif fmt == 'parquet':
+            df.to_parquet('weather_alerts.parquet', index=False)
+            print(f"✅ Saved to weather_alerts.parquet")
+        elif fmt == 'json':
+            df.to_json('weather_alerts.json', orient='records', indent=2)
+            print(f"✅ Saved to weather_alerts.json")
 
-def run_analytical_queries(db_path='weather_alerts.db'):
+def run_analytical_queries(df):
     """
-    Run analytical queries as required by the exercise
+    Run analytical queries using pandas DataFrame operations
     """
-    conn = sqlite3.connect(db_path)
+    if df.empty:
+        print("❌ No data to analyze")
+        return {}
     
     print("\n" + "="*60)
     print("ANALYTICAL QUERIES RESULTS")
@@ -123,166 +94,208 @@ def run_analytical_queries(db_path='weather_alerts.db'):
     # Query 1: Alerts by Event Type
     print("\n1. COUNT OF ALERTS BY EVENT TYPE:")
     print("-" * 40)
-    query1 = """
-    SELECT 
-        event,
-        COUNT(*) as alert_count
-    FROM weather_alerts 
-    WHERE event IS NOT NULL
-    GROUP BY event
-    ORDER BY alert_count DESC
-    LIMIT 10
-    """
-    df1 = pd.read_sql_query(query1, conn)
-    print(df1.to_string(index=False))
+    event_counts = df['event'].value_counts().head(10)
+    print(event_counts.to_string())
     
     # Query 2: Alerts by Severity
     print("\n2. ALERTS BY SEVERITY LEVEL:")
     print("-" * 40)
-    query2 = """
-    SELECT 
-        severity,
-        COUNT(*) as alert_count,
-        ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM weather_alerts), 2) as percentage
-    FROM weather_alerts 
-    WHERE severity IS NOT NULL
-    GROUP BY severity
-    ORDER BY alert_count DESC
-    """
-    df2 = pd.read_sql_query(query2, conn)
-    print(df2.to_string(index=False))
+    severity_counts = df['severity'].value_counts()
+    severity_pct = (df['severity'].value_counts(normalize=True) * 100).round(2)
+    severity_analysis = pd.DataFrame({
+        'alert_count': severity_counts,
+        'percentage': severity_pct
+    }).fillna(0)
+    print(severity_analysis.to_string())
     
-    # Query 3: Texas Alerts (this week)
+    # Query 3: Texas Alerts
     print("\n3. ALERTS IN TEXAS:")
     print("-" * 40)
-    query3 = """
-    SELECT 
-        COUNT(*) as texas_alerts,
-        COUNT(CASE WHEN datetime(sent) > datetime('now', '-7 days') THEN 1 END) as texas_alerts_this_week
-    FROM weather_alerts 
-    WHERE area_desc LIKE '%TX%' OR area_desc LIKE '%Texas%'
-    """
-    df3 = pd.read_sql_query(query3, conn)
-    print(df3.to_string(index=False))
+    texas_mask = df['area_desc'].str.contains('TX|Texas', case=False, na=False)
+    texas_alerts = df[texas_mask]
     
-    # Query 4: Time-based Analysis - Minutes until expiration
+    # This week filter (make timezone-aware)
+    one_week_ago = pd.Timestamp.now(tz='UTC') - timedelta(days=7)
+    texas_this_week = texas_alerts[texas_alerts['sent'] > one_week_ago]
+    
+    texas_summary = pd.DataFrame({
+        'metric': ['total_texas_alerts', 'texas_alerts_this_week'],
+        'count': [len(texas_alerts), len(texas_this_week)]
+    })
+    print(texas_summary.to_string(index=False))
+    
+    # Query 4: Time-based Analysis - Expiration Status
     print("\n4. TIME-BASED ANALYSIS - EXPIRATION STATUS:")
     print("-" * 40)
-    query4 = """
-    SELECT 
-        CASE 
-            WHEN expires IS NULL THEN 'No Expiration Set'
-            WHEN datetime(expires) < datetime('now') THEN 'Expired'
-            WHEN datetime(expires) > datetime('now') THEN 'Active'
-            ELSE 'Unknown'
-        END as expiration_status,
-        COUNT(*) as count
-    FROM weather_alerts
-    GROUP BY expiration_status
-    ORDER BY count DESC
-    """
-    df4 = pd.read_sql_query(query4, conn)
-    print(df4.to_string(index=False))
+    now = pd.Timestamp.now(tz='UTC')
     
-    # Query 5: Top States/Areas by Active Alerts
+    def get_expiration_status(row):
+        if pd.isna(row['expires']):
+            return 'No Expiration Set'
+        elif row['expires'] < now:
+            return 'Expired'
+        elif row['expires'] > now:
+            return 'Active'
+        else:
+            return 'Unknown'
+    
+    df['expiration_status'] = df.apply(get_expiration_status, axis=1)
+    expiration_counts = df['expiration_status'].value_counts()
+    print(expiration_counts.to_string())
+    
+    # Query 5: Top Areas by Active Alerts
     print("\n5. TOP AREAS BY NUMBER OF ACTIVE ALERTS:")
     print("-" * 40)
-    query5 = """
-    SELECT 
-        area_desc,
-        COUNT(*) as active_alerts
-    FROM weather_alerts 
-    WHERE (expires IS NULL OR datetime(expires) > datetime('now'))
-        AND status = 'Actual'
-        AND area_desc IS NOT NULL
-    GROUP BY area_desc
-    ORDER BY active_alerts DESC
-    LIMIT 10
-    """
-    df5 = pd.read_sql_query(query5, conn)
-    print(df5.to_string(index=False))
+    active_mask = (
+        (df['expiration_status'] == 'Active') | 
+        (df['expiration_status'] == 'No Expiration Set')
+    ) & (df['status'] == 'Actual')
     
-    # Query 6: Operational KPI - Urgent Alerts Requiring Immediate Action
+    active_alerts = df[active_mask]
+    top_areas = active_alerts['area_desc'].value_counts().head(10)
+    print(top_areas.to_string())
+    
+    # Query 6: Operational KPI - Urgent Alerts
     print("\n6. OPERATIONAL KPI - URGENT ALERTS NEEDING IMMEDIATE ACTION:")
     print("-" * 40)
-    query6 = """
-    SELECT 
-        event,
-        area_desc,
-        severity,
-        urgency,
-        CASE 
-            WHEN expires IS NOT NULL THEN 
-                ROUND((julianday(expires) - julianday('now')) * 24 * 60, 0)
-            ELSE NULL
-        END as minutes_until_expiration
-    FROM weather_alerts 
-    WHERE urgency = 'Immediate' 
-        AND severity IN ('Severe', 'Extreme')
-        AND (expires IS NULL OR datetime(expires) > datetime('now'))
-    ORDER BY minutes_until_expiration ASC
-    LIMIT 10
-    """
-    df6 = pd.read_sql_query(query6, conn)
-    if not df6.empty:
-        print(df6.to_string(index=False))
+    urgent_mask = (
+        (df['urgency'] == 'Immediate') & 
+        (df['severity'].isin(['Severe', 'Extreme'])) &
+        (df['expiration_status'].isin(['Active', 'No Expiration Set']))
+    )
+    
+    urgent_alerts = df[urgent_mask][['event', 'area_desc', 'severity', 'urgency', 'expires']].copy()
+    
+    if not urgent_alerts.empty:
+        # Calculate minutes until expiration
+        urgent_alerts['minutes_until_expiration'] = (
+            (urgent_alerts['expires'] - pd.Timestamp.now(tz='UTC')).dt.total_seconds() / 60
+        ).round(0)
+        urgent_alerts = urgent_alerts.sort_values('minutes_until_expiration')
+        print(urgent_alerts.head(10).to_string(index=False))
     else:
         print("No immediate urgent alerts found")
     
-    # Summary Statistics
+    # Query 7: Summary Statistics
     print("\n7. SUMMARY STATISTICS:")
     print("-" * 40)
-    query7 = """
-    SELECT 
-        COUNT(*) as total_alerts,
-        COUNT(CASE WHEN status = 'Actual' THEN 1 END) as actual_alerts,
-        COUNT(CASE WHEN status = 'Test' THEN 1 END) as test_alerts,
-        COUNT(CASE WHEN urgency = 'Immediate' THEN 1 END) as immediate_alerts,
-        COUNT(CASE WHEN severity = 'Severe' THEN 1 END) as severe_alerts,
-        COUNT(CASE WHEN severity = 'Extreme' THEN 1 END) as extreme_alerts
-    FROM weather_alerts
-    """
-    df7 = pd.read_sql_query(query7, conn)
-    print(df7.to_string(index=False))
+    summary_stats = pd.DataFrame({
+        'metric': [
+            'total_alerts',
+            'actual_alerts', 
+            'test_alerts',
+            'immediate_alerts',
+            'severe_alerts',
+            'extreme_alerts'
+        ],
+        'count': [
+            len(df),
+            len(df[df['status'] == 'Actual']),
+            len(df[df['status'] == 'Test']),
+            len(df[df['urgency'] == 'Immediate']),
+            len(df[df['severity'] == 'Severe']),
+            len(df[df['severity'] == 'Extreme'])
+        ]
+    })
+    print(summary_stats.to_string(index=False))
     
-    conn.close()
+    # Additional DataFrame-specific analysis
+    print("\n8. DATA QUALITY ANALYSIS:")
+    print("-" * 40)
+    data_quality = pd.DataFrame({
+        'column': df.columns,
+        'non_null_count': df.count(),
+        'null_count': df.isnull().sum(),
+        'null_percentage': (df.isnull().sum() / len(df) * 100).round(2)
+    })
+    print(data_quality.to_string(index=False))
     
     return {
-        'event_counts': df1,
-        'severity_breakdown': df2,
-        'texas_alerts': df3,
-        'expiration_status': df4,
-        'top_areas': df5,
-        'urgent_alerts': df6,
-        'summary_stats': df7
+        'dataframe': df,
+        'event_counts': event_counts,
+        'severity_analysis': severity_analysis,
+        'texas_summary': texas_summary,
+        'expiration_counts': expiration_counts,
+        'top_areas': top_areas,
+        'urgent_alerts': urgent_alerts,
+        'summary_stats': summary_stats,
+        'data_quality': data_quality
     }
+
+def export_analysis_results(results):
+    """
+    Export analysis results to both CSV and Parquet files
+    """
+    if not results:
+        return
+    
+    # Define the analysis results to export
+    exports = {
+        'analysis_event_counts': results['event_counts'],
+        'analysis_severity_breakdown': results['severity_analysis'],
+        'analysis_summary_stats': results['summary_stats'],
+        'analysis_data_quality': results['data_quality']
+    }
+    
+    # Export each result to both CSV and Parquet
+    for filename, data in exports.items():
+        if isinstance(data, pd.Series):
+            # Convert Series to DataFrame for better export
+            df = data.to_frame().reset_index()
+        else:
+            df = data.reset_index() if hasattr(data, 'reset_index') else data
+        
+        # Export to CSV
+        df.to_csv(f'{filename}.csv', index=False)
+        
+        # Export to Parquet
+        df.to_parquet(f'{filename}.parquet', index=False)
+    
+    # Also export the top areas and urgent alerts if they exist
+    if 'top_areas' in results and not results['top_areas'].empty:
+        top_areas_df = results['top_areas'].to_frame().reset_index()
+        top_areas_df.to_csv('analysis_top_areas.csv', index=False)
+        top_areas_df.to_parquet('analysis_top_areas.parquet', index=False)
+    
+    if 'urgent_alerts' in results and not results['urgent_alerts'].empty:
+        results['urgent_alerts'].to_csv('analysis_urgent_alerts.csv', index=False)
+        results['urgent_alerts'].to_parquet('analysis_urgent_alerts.parquet', index=False)
+    
+    print(f"\n✅ Analysis results exported to both CSV and Parquet files")
 
 def main():
     """
-    Main function - Complete weather alerts analysis pipeline
+    Main function - Complete weather alerts analysis pipeline using DataFrames
     """
-    print("🌦️  NOAA Weather Alerts Analysis")
-    print("="*50)
+    print("🌦️  NOAA Weather Alerts Analysis (DataFrame Version)")
+    print("="*55)
     
-    # Step 1: Fetch data from API
-    alerts = fetch_weather_alerts()
+    # Step 1: Fetch data from API and create DataFrame
+    df = fetch_weather_alerts()
     
-    if not alerts:
+    if df.empty:
         print("❌ No alerts fetched. Exiting.")
         return
     
-    # Step 2: Store data locally in SQLite
-    save_to_sqlite(alerts)
+    # Step 2: Save DataFrame to multiple formats
+    save_dataframe(df, ['csv', 'parquet'])
     
-    # Step 3: Run analytical queries
-    results = run_analytical_queries()
+    # Step 3: Run analytical queries using pandas operations
+    results = run_analytical_queries(df)
     
-    print(f"\n✅ Analysis complete! Database saved as 'weather_alerts.db'")
-    print(f"📊 Total alerts processed: {len(alerts)}")
-    print(f"🔍 You can explore the data further using:")
-    print(f"   - DB Browser for SQLite (GUI)")
-    print(f"   - sqlite3 weather_alerts.db (command line)")
-    print(f"   - The SQL queries in NOAA.sql file")
+    # Step 4: Export analysis results
+    export_analysis_results(results)
+    
+    print(f"\n✅ Analysis complete!")
+    print(f"📊 Total alerts processed: {len(df)}")
+    print(f"💾 Data saved in dual formats:")
+    print(f"   - weather_alerts.csv/.parquet (main dataset)")
+    print(f"   - analysis_*.csv/.parquet (individual analysis results)")
+    print(f"🔍 You can explore the data using:")
+    print(f"   - CSV files: Excel, Google Sheets, any spreadsheet app")
+    print(f"   - Parquet files: pandas (faster loading)")
+    print(f"   - Python: pd.read_csv() or pd.read_parquet()")
+    print(f"   - Jupyter notebooks for interactive analysis")
 
 if __name__ == "__main__":
     main()
